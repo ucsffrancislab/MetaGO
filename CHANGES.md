@@ -7,6 +7,8 @@ https://github.com/GATB/dsk/releases
 https://github.com/GATB/dsk/releases/download/v2.3.3/dsk-v2.3.3-bin-Linux.tar.gz
 
 Upgrade to python3
+Needed to add parentheses to a couple print statements
+Needed to replace some tabs with spaces
 
 
 
