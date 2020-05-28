@@ -50,7 +50,7 @@ if(options.Unionfile is None or
    options.healthy is None or
    options.patient is None or
    options.filter_way is None):
-        print prog_base+":error: Missing the required command-line argument."
+        print( prog_base+":error: Missing the required command-line argument." )
         parser.print_help()
         sys.exit(0)
 

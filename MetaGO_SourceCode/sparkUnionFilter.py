@@ -54,7 +54,7 @@ if(options.Unionfile is None or
    options.healthy is None or
    options.patient is None or
    options.filter_way is None):
-        print prog_base+":error: Missing the required command-line argument."
+        print( prog_base+":error: Missing the required command-line argument." )
         parser.print_help()
         sys.exit(0)
 
@@ -276,12 +276,18 @@ def filtering(s):
                 predicted = model.predict(train_X)
                 ConfusionMtrix=metrics.confusion_matrix(expected, predicted)
                 aa=0.5*(float(ConfusionMtrix[0,0])/float(number_h)+float(ConfusionMtrix[1,1])/float(number_p))
-		mean_AA=np.array(group1).mean()
-		mean_BB=np.array(group2).mean()
-		if mean_AA>mean_BB:
-			LR_label='H'
-		else:
-			LR_label='P'
+
+
+                # replaced tabs with 8 spaces
+                mean_AA=np.array(group1).mean()
+                mean_BB=np.array(group2).mean()
+                if mean_AA>mean_BB:
+                        LR_label='H'
+                else:
+                        LR_label='P'
+
+
+
                 if (aa >= LR_p):
                     AUCline=("!!"+str(tuple_list[0])+'#'+str(values)+' Wilcoxon_Pvalue:'+str(Pvalue)+' Regress_ASS:'+str(aa)+' Label:'+LR_label)
                 else:

@@ -16,7 +16,7 @@ parser.add_option("-p","--outputPath",action="store",type="string",dest="fileOut
 (options,args)=parser.parse_args()
 if(options.splitedNumber is None or
     options.sortFile is None):
-    print prog_base+":error: Missing the required command-line argument."
+    print( prog_base+":error: Missing the required command-line argument." )
     parser.print_help()
     sys.exit(0)
 FileSpliedNumber=options.splitedNumber
