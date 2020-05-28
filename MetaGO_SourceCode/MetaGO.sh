@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 ARGS=`getopt -a -o I:F:N:M:K:m:P:C:A:X:L:W:O:USZh -l inputData:,fileList:,n1:,n2:,kMer:,min:,Piece:,K2test:,ASS:,WilcoxonTest:,LogicalRegress:,filterFuction:,outputPath:,Union,sparse,cleanUp,help -- "$@"`  
 [ $? -ne 0 ] && usage  
 #set -- "${ARGS}"  
@@ -236,8 +238,9 @@ then
 
     mkdir G1_tupleFile G2_tupleFile
 
-    group1SRAfileList=`cat group1File.txt`
-    for iterm in $group1SRAfileList
+    for g in 1 2 ; do
+
+    for iterm in $( cat group${g}File.txt )
     do
         sampleName=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $1}'`
         fileType=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $2}'`
@@ -249,7 +252,7 @@ then
         then
             fastq-dump --split-spot $iterm --fasta --gzip
             dsk $sampleName.fasta.gz $KMER -t $MIN
-            parse_results $sampleName".fasta.solid_kmers_binary" > G1_tupleFile/$sampleName"_k_"$KMER".txt"
+            parse_results $sampleName".fasta.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
             rm $sampleName".fasta.solid_kmers_binary" -rf
             rm $sampleName".fasta.reads_binary" -rf
         else
@@ -258,25 +261,25 @@ then
                 if [[ "$fileType" = 'fasta' ]]
                 then
                     dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fasta.solid_kmers_binary" > G1_tupleFile/$sampleName"_k_"$KMER".txt"
+                    parse_results $sampleName".fasta.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
                     rm $sampleName".fasta.solid_kmers_binary" -rf
                     rm $sampleName".fasta.reads_binary" -rf
                 elif [[ "$fileType" = 'fa' ]]
                 then
                     dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fa.solid_kmers_binary" > G1_tupleFile/$sampleName"_k_"$KMER".txt"
+                    parse_results $sampleName".fa.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
                     rm $sampleName".fa.solid_kmers_binary" -rf
                     rm $sampleName".fa.reads_binary" -rf
                 elif [[ "$fileType" = 'fastaq' ]]
                 then
                     dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fastaq.solid_kmers_binary" > G1_tupleFile/$sampleName"_k_"$KMER".txt"
+                    parse_results $sampleName".fastaq.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
                     rm $sampleName".fastaq.solid_kmers_binary" -rf
                     rm $sampleName".fastaq.reads_binary" -rf
                 elif [[ "$fileType" = 'fq' ]]
                 then
                     dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fq.solid_kmers_binary" > G1_tupleFile/$sampleName"_k_"$KMER".txt"
+                    parse_results $sampleName".fq.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
                     rm $sampleName".fq.solid_kmers_binary" -rf
                     rm $sampleName".fq.reads_binary" -rf
                 fi
@@ -284,68 +287,15 @@ then
 
             else
                 dsk $iterm $KMER -t $MIN
-                parse_results $sampleName".solid_kmers_binary" > G1_tupleFile/$sampleName"_k_"$KMER".txt"
+                parse_results $sampleName".solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
                 rm $sampleName".solid_kmers_binary" -rf
                 rm $sampleName".reads_binary" -rf
             fi
         fi    
 
     done
+    done	#	for g in 1 2 ; do	
 
-    group2SRAfileList=`cat group2File.txt`
-    for iterm in $group2SRAfileList
-    do
-        sampleName=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $1}'`
-        fileType=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $2}'`
-        fileType2=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $3}'`
-        echo $sampleName $fileType
-        if [[ "$fileType" = 'sra' ]]
-        then
-            fastq-dump --split-spot $iterm --fasta --gzip
-            dsk $sampleName.fasta.gz $KMER -t $MIN
-            parse_results $sampleName".fasta.solid_kmers_binary" > G2_tupleFile/$sampleName"_k_"$KMER".txt"
-            rm $sampleName".fasta.solid_kmers_binary" -rf
-            rm $sampleName".fasta.reads_binary" -rf
-        else
-            if [[ "$fileType2" = 'gz' ]]
-            then
-                if [[ "$fileType" = 'fasta' ]]
-                then
-                    dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fasta.solid_kmers_binary" > G2_tupleFile/$sampleName"_k_"$KMER".txt"
-                    rm $sampleName".fasta.solid_kmers_binary" -rf
-                    rm $sampleName".fasta.reads_binary" -rf
-
-                elif [[ "$fileType" = 'fa' ]]
-                then
-                    dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fa.solid_kmers_binary" > G2_tupleFile/$sampleName"_k_"$KMER".txt"
-                    rm $sampleName".fa.solid_kmers_binary" -rf
-                    rm $sampleName".fa.reads_binary" -rf
-       
-                elif [[ "$fileType" = 'fastaq' ]]
-                then
-                    dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fastaq.solid_kmers_binary" > G2_tupleFile/$sampleName"_k_"$KMER".txt"
-                    rm $sampleName".fastaq.solid_kmers_binary" -rf
-                    rm $sampleName".fastaq.reads_binary" -rf
-    
-                elif [[ "$fileType" = 'fq' ]]
-                then
-                    dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fq.solid_kmers_binary" > G2_tupleFile/$sampleName"_k_"$KMER".txt"
-                    rm $sampleName".fq.solid_kmers_binary" -rf
-                    rm $sampleName".fq.reads_binary" -rf
-                fi
-
-            else
-                dsk $iterm $KMER -t $MIN
-                parse_results $sampleName".solid_kmers_binary" > G2_tupleFile/$sampleName"_k_"$KMER".txt"
-                rm $sampleName".solid_kmers_binary" -rf
-                rm $sampleName".reads_binary" -rf
-            fi
-        fi
-    done
     rm group1File.txt group2File.txt
 
 
