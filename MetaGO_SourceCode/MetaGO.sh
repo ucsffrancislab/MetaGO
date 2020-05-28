@@ -238,60 +238,31 @@ then
 
     mkdir G1_tupleFile G2_tupleFile
 
+    nb_cores=$( getconf _NPROCESSORS_ONLN )
+
     for g in 1 2 ; do
 
     for iterm in $( cat group${g}File.txt )
     do
+
+#	example
+#	iterm=/mnt/ssd0/MetaGO_S3_20200407_Schizophrenia/Control-SD14-unmapped.fasta.gz
+
         sampleName=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $1}'`
         fileType=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $2}'`
         fileType2=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $3}'`
         echo $sampleName
         echo $fileType
 
-        if [[ "$fileType" = 'sra' ]]
-        then
+        if [[ "$fileType" = 'sra' ]]; then
             fastq-dump --split-spot $iterm --fasta --gzip
-            dsk $sampleName.fasta.gz $KMER -t $MIN
-            parse_results $sampleName".fasta.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
-            rm $sampleName".fasta.solid_kmers_binary" -rf
-            rm $sampleName".fasta.reads_binary" -rf
+            dskbase=$sampleName.fasta.gz
         else
-            if [[ "$fileType2" = 'gz' ]]
-            then
-                if [[ "$fileType" = 'fasta' ]]
-                then
-                    dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fasta.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
-                    rm $sampleName".fasta.solid_kmers_binary" -rf
-                    rm $sampleName".fasta.reads_binary" -rf
-                elif [[ "$fileType" = 'fa' ]]
-                then
-                    dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fa.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
-                    rm $sampleName".fa.solid_kmers_binary" -rf
-                    rm $sampleName".fa.reads_binary" -rf
-                elif [[ "$fileType" = 'fastaq' ]]
-                then
-                    dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fastaq.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
-                    rm $sampleName".fastaq.solid_kmers_binary" -rf
-                    rm $sampleName".fastaq.reads_binary" -rf
-                elif [[ "$fileType" = 'fq' ]]
-                then
-                    dsk $iterm $KMER -t $MIN
-                    parse_results $sampleName".fq.solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
-                    rm $sampleName".fq.solid_kmers_binary" -rf
-                    rm $sampleName".fq.reads_binary" -rf
-                fi
-
-
-            else
-                dsk $iterm $KMER -t $MIN
-                parse_results $sampleName".solid_kmers_binary" > G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
-                rm $sampleName".solid_kmers_binary" -rf
-                rm $sampleName".reads_binary" -rf
-            fi
+            dskbase=$iterm
         fi    
+        dsk -nb-cores ${nb_cores} -file ${dskbase} -kmer-size $KMER -abundance-min $MIN -out ${dskbase}.h5
+        dsk2ascii -nb-cores ${nb_cores} -file ${dskbase}.h5 -out G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
+        rm ${dskbase}.h5
 
     done
     done	#	for g in 1 2 ; do	
