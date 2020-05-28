@@ -209,6 +209,7 @@ if [ "$InputData" = 'RAW' ]; then
 	mkdir G1_tupleFile G2_tupleFile
 
 	nb_cores=$( getconf _NPROCESSORS_ONLN )
+	echo "Using ${nb_cores} for dsk"
 
 	for g in 1 2 ; do
 
