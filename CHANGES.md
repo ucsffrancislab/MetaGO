@@ -11,5 +11,9 @@ Needed to add parentheses to a couple print statements
 Needed to replace some tabs with spaces
 
 
+Can't actually get MetaGO to run with python3.
+Hadoop or spark are not happy.
+Still working.
+
 
 
