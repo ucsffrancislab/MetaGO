@@ -253,6 +253,23 @@ if [ "$InputData" = 'RAW' ]; then
 	#####################
 	# Count tupleNumber #
 	#####################
+
+
+	#	parallelize this with parallel
+	#	I think that the order of this file matters so don't muck it up.
+	#	for f in G?_tupleFile/*.txt ; do
+	#		echo "awk '{sum+=$2};END{print sum}' $f > ${f}.sum.txt"
+	#	done | parallel
+	#	for i in 1 2 ; do
+	#		cd G${i}_tupleFile/
+	#		ls *.txt > ../Group${i}FileList.txt
+	#		for iterm in $( cat ../Group${i}FileList.txt ); do
+	#			###awk '{sum+=$2};END{print sum}' $iterm >> ../group1TupleNumber.txt
+	#			cat ${iterm}.sum.txt >> ../group${i}TupleNumber.txt
+	#		done
+	#		cd ../
+	#	done
+
 	cd G1_tupleFile/
 	ls *.txt > ../Group1FileList.txt
 	for iterm in $( cat ../Group1FileList.txt ); do
