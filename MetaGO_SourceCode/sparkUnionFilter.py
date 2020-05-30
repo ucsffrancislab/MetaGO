@@ -100,6 +100,13 @@ for i in wordList[0:k+1]:
         listB.append(i+j)
 B=listB[0:number_h+number_p]
 print(B)
+
+
+
+#cores=os.sysconf("SC_NPROCESSORS_ONLN")
+#sc = SparkContext("local["+str(cores)+"]", "First Spark App")
+
+
 sc = SparkContext("local[10]", "First Spark App")
 
 ###################################

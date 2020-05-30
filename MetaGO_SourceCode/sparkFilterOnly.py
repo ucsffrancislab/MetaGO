@@ -78,6 +78,9 @@ print(tuple_number)
 f_number.close()
 
 
+#cores=os.sysconf("SC_NPROCESSORS_ONLN")
+#sc = SparkContext("local["+str(cores)+"]", "First Spark App")
+
 sc = SparkContext("local[10]", "First Spark App")
 res_select_80=sc.textFile(file_in,use_unicode=False).persist(StorageLevel.MEMORY_AND_DISK_SER)
 
