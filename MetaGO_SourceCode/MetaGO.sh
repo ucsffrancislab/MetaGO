@@ -270,6 +270,8 @@ if [ "$InputData" = 'RAW' ]; then
 	#		cd ../
 	#	done
 
+	#	Not sure that's worth parallelizing
+
 	cd G1_tupleFile/
 	ls *.txt > ../Group1FileList.txt
 	for iterm in $( cat ../Group1FileList.txt ); do
