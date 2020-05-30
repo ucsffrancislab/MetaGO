@@ -309,6 +309,7 @@ if [ "$InputData" = 'RAW' ]; then
 			cd ../
 			rm -r splited_file/
 			rm -r temporary_files/
+			cd ..
 		done
 
 ##		mv split_tupleData.py G1_tupleFile/
