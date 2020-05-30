@@ -297,36 +297,50 @@ if [ "$InputData" = 'RAW' ]; then
 	# split tupleFile #
 	###################
 	if [[ "$PICECE" -ne 1 ]]; then
-#		mv split_tupleData.py G1_tupleFile/
-#		mv split_tupleData.sh G1_tupleFile/
-		cd G1_tupleFile/
-		bash ../split_tupleData.sh ../Group1FileList.txt $PICECE 
-#		bash split_tupleData.sh ../Group1FileList.txt $PICECE 
-#		mv split_tupleData.py ../G2_tupleFile/
-#		mv split_tupleData.sh ../G2_tupleFile/
-		cd splited_file/
-		for k in $( seq 1 $PICECE); do
-			ls *_$k.txt > ../../Group1FileList_$k.txt
-		done
-		mv * ../../
-		cd ../
-		rm -r splited_file/
-		rm -r temporary_files/
 
-		cd ../G2_tupleFile/
-		bash ../split_tupleData.sh ../Group2FileList.txt $PICECE
-#		bash split_tupleData.sh ../Group2FileList.txt $PICECE
-#		mv split_tupleData.py ../
-#		mv split_tupleData.sh ../
-		cd splited_file/
-		for k in $( seq 1 $PICECE); do
-			ls *_$k.txt > ../../Group2FileList_$k.txt
+		for i in 1 2 ; do
+			cd G${i}_tupleFile/
+			bash ../split_tupleData.sh ../Group${i}FileList.txt $PICECE 
+			cd splited_file/
+			for k in $( seq 1 $PICECE); do
+				ls *_$k.txt > ../../Group${i}FileList_$k.txt
+			done
+			mv * ../../
+			cd ../
+			rm -r splited_file/
+			rm -r temporary_files/
 		done
-		mv * ../../
-		cd ../
-		rm -r splited_file/
-		rm -r temporary_files/
-		cd ../
+
+##		mv split_tupleData.py G1_tupleFile/
+##		mv split_tupleData.sh G1_tupleFile/
+#		cd G1_tupleFile/
+#		bash ../split_tupleData.sh ../Group1FileList.txt $PICECE 
+##		bash split_tupleData.sh ../Group1FileList.txt $PICECE 
+##		mv split_tupleData.py ../G2_tupleFile/
+##		mv split_tupleData.sh ../G2_tupleFile/
+#		cd splited_file/
+#		for k in $( seq 1 $PICECE); do
+#			ls *_$k.txt > ../../Group1FileList_$k.txt
+#		done
+#		mv * ../../
+#		cd ../
+#		rm -r splited_file/
+#		rm -r temporary_files/
+#
+#		cd ../G2_tupleFile/
+#		bash ../split_tupleData.sh ../Group2FileList.txt $PICECE
+##		bash split_tupleData.sh ../Group2FileList.txt $PICECE
+##		mv split_tupleData.py ../
+##		mv split_tupleData.sh ../
+#		cd splited_file/
+#		for k in $( seq 1 $PICECE); do
+#			ls *_$k.txt > ../../Group2FileList_$k.txt
+#		done
+#		mv * ../../
+#		cd ../
+#		rm -r splited_file/
+#		rm -r temporary_files/
+#		cd ../
 
 		if [[ "$Clean" = "Y" ]]; then 
 			rm -r G1_tupleFile/ G2_tupleFile/
