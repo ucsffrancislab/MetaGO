@@ -26,10 +26,12 @@ do
 #echo $item2
 #fileSize=`du -s $item2`
 #echo $fileSize
-python ../split_tupleData.py -s $pieces -f $item2 -p ../splited_file/
+echo $PWD
+python ../../split_tupleData.py -s $pieces -f $item2 -p ../splited_file/
 #python split_tupleData.py -s $pieces -f $item2 -p ../splited_file/
 #rm $item2 -rf
 done
-mv *.txt *.py ../
+#mv *.txt *.py ../
+mv *.txt ../
 cd ../
 
