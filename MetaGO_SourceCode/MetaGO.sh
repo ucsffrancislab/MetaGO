@@ -288,6 +288,9 @@ if [ "$InputData" = 'RAW' ]; then
 	rm group1TupleNumber.txt group2TupleNumber.txt
 
 
+#	Stop moving the commands around
+#	may need to add path to cat to python script from bash script
+
 	###################
 	# split tupleFile #
 	###################
