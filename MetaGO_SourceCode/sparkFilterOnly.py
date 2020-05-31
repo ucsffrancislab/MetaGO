@@ -81,6 +81,7 @@ f_number.close()
 #cores=os.sysconf("SC_NPROCESSORS_ONLN")
 #sc = SparkContext("local["+str(cores)+"]", "First Spark App")
 #sc = SparkContext("local[10]", "First Spark App")
+#	http://spark.apache.org/docs/latest/submitting-applications.html#master-urls
 #	local[*] Run Spark locally with as many worker threads as logical cores on your machine.
 sc = SparkContext("local[*]", "First Spark App")
 
