@@ -312,37 +312,6 @@ if [ "$InputData" = 'RAW' ]; then
 			cd ..
 		done
 
-##		mv split_tupleData.py G1_tupleFile/
-##		mv split_tupleData.sh G1_tupleFile/
-#		cd G1_tupleFile/
-#		bash ../split_tupleData.sh ../Group1FileList.txt $PICECE 
-##		bash split_tupleData.sh ../Group1FileList.txt $PICECE 
-##		mv split_tupleData.py ../G2_tupleFile/
-##		mv split_tupleData.sh ../G2_tupleFile/
-#		cd splited_file/
-#		for k in $( seq 1 $PICECE); do
-#			ls *_$k.txt > ../../Group1FileList_$k.txt
-#		done
-#		mv * ../../
-#		cd ../
-#		rm -r splited_file/
-#		rm -r temporary_files/
-#
-#		cd ../G2_tupleFile/
-#		bash ../split_tupleData.sh ../Group2FileList.txt $PICECE
-##		bash split_tupleData.sh ../Group2FileList.txt $PICECE
-##		mv split_tupleData.py ../
-##		mv split_tupleData.sh ../
-#		cd splited_file/
-#		for k in $( seq 1 $PICECE); do
-#			ls *_$k.txt > ../../Group2FileList_$k.txt
-#		done
-#		mv * ../../
-#		cd ../
-#		rm -r splited_file/
-#		rm -r temporary_files/
-#		cd ../
-
 		if [[ "$Clean" = "Y" ]]; then 
 			rm -r G1_tupleFile/ G2_tupleFile/
 		else
@@ -353,11 +322,20 @@ if [ "$InputData" = 'RAW' ]; then
 
 fi
 
+spark_submit="spark-submit --properties-file ./spark.conf"
+spark_common="-m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY"
+sparkUnionFilter="${spark_submit} sparkUnionFilter.py -r TupleNumber.txt ${spark_common} -u $saveUnion -s $saveFilter80"
+
+sparkFilterOnly="${spark_submit} sparkFilterOnly.py -r $OUT/TupleNumber.txt ${spark_common}"
+#spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse_$k/ -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
+#spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse/    -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
+
 if [[ "$PICECE" -ne 1 ]]; then
 	for k in $( seq 1 $PICECE); do
 		if [ "$InputData" = 'RAW' ]; then
 			cat Group1FileList_$k.txt Group2FileList_$k.txt > TupleFileList_$k.txt
-			spark-submit --properties-file ./spark.conf sparkUnionFilter.py -f TupleFileList_$k.txt -r TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY -u $saveUnion -s $saveFilter80
+#			spark-submit --properties-file ./spark.conf sparkUnionFilter.py -f TupleFileList_$k.txt -r TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY -u $saveUnion -s $saveFilter80
+			${sparkUnionFilter} -f TupleFileList_$k.txt
 
 			if [[ "$saveUnion" = "Y" ]]; then
 				mv tuple_union tuple_union_$k
@@ -370,7 +348,8 @@ if [[ "$PICECE" -ne 1 ]]; then
 			fi
 
 		else
-			spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse_$k/ -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
+			#spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse_$k/ -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
+			${sparkFilterOnly} -f $OUT/filter_sparse_$k/
 		fi
 
 		if [[ "$WAY" = "ASS" ]]; then
@@ -394,7 +373,8 @@ else
 		cd ../G2_tupleFile
 		mv * ../
 		cd ../
-		spark-submit --properties-file ./spark.conf sparkUnionFilter.py -f TupleFileList.txt -r TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY -u $saveUnion -s $saveFilter80
+		#spark-submit --properties-file ./spark.conf sparkUnionFilter.py -f TupleFileList.txt -r TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY -u $saveUnion -s $saveFilter80
+		${sparkUnionFilter} -f TupleFileList.txt
 		rm TupleFileList.txt
 
 		if [[ "$saveUnion" = "Y" ]]; then
@@ -405,7 +385,8 @@ else
 			mv filter_sparse/ $OUT
 		fi
 	else
-		spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse/ -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
+		#spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse/ -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
+		${sparkFilterOnly} -f $OUT/filter_sparse/
 	fi
 
 	if [[ "$WAY" = "ASS" ]]; then
