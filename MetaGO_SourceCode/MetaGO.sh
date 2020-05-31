@@ -100,39 +100,39 @@ Clean=$CLEANUP
 echo $InputData
 
 if [ "$InputData" != 'RAW' -a "$InputData" != 'MATRIX' ]; then
-	echo " ERRO!! Please choose a correct inputdata, you can choose 'RAW' or 'MATRIX' "
+	echo " ERROR!! Please choose a correct inputdata, you can choose 'RAW' or 'MATRIX' "
 	exit
 fi
 
 if [ -n "$FileList" -a "$InputData" = 'MATRIX' ]||[ -n "$KMER" -a "$InputData" = 'MATRIX' ]||[ -n "$MIN" -a "$InputData" = 'MATRIX' ]||[ -n "$saveUnion" -a "$InputData" = 'MATRIX' ]||[ -n "$Clean" -a "$InputData" = 'MATRIX' ]; then
-	echo "ERRO!! You should choose a correct parameter! For the inputdata you have chosen 'MATRIX', plese don't choose fileList kMer min and Union parameter!"
+	echo "ERROR!! You should choose a correct parameter! For the inputdata you have chosen 'MATRIX', plese don't choose fileList kMer min and Union parameter!"
 	exit
 fi
 
 if [ -n "$K2test" -a "$filterFuction" = 'ASS' ]||[ -n "$ASS" -a "$filterFuction" = 'chi2-test' ]; then
-	echo "ERRO! You should choose a right parameter! If you choose 'ASS' as the filterFuction, you can not choose K2test, and if you choose 'chi2-test' as the filterFuction, you can not choose ASS"
+	echo "ERROR! You should choose a right parameter! If you choose 'ASS' as the filterFuction, you can not choose K2test, and if you choose 'chi2-test' as the filterFuction, you can not choose ASS"
 	exit
 fi
 
 if [ "$InputData" = 'RAW' ]; then
 	if [ -z $FileList ]||[ -z $N1 ]||[ -z $N2 ]||[ -z $KMER ]; then
-		echo "ERRO!!Lack of parameter!!"
+		echo "ERROR!!Lack of parameter!!"
 		exit
 	fi
 else
 	if [ -z $N1 ]||[ -z $N2 ]; then
-		echo "ERRO!!Lack of parameter!!"
+		echo "ERROR!!Lack of parameter!!"
 		exit
 	fi
 fi
 
 if [ "$filterFuction" != 'ASS' -a  "$filterFuction" != 'chi2-test' ]; then
-	echo " ERRO!! Please choose a correct funtion for filtering, you can shoose 'chi2-test' or 'ASS' "
+	echo " ERROR!! Please choose a correct funtion for filtering, you can shoose 'chi2-test' or 'ASS' "
 	exit
 fi
 
 if [ "$Piece" != 16 -a "$Piece" != 8 -a "$Piece" != 4 -a "$Piece" != 1 ]; then
-	echo "ERRO! You can only choose 16 8 4 or 1(no split) for -P "
+	echo "ERROR! You can only choose 16 8 4 or 1(no split) for -P "
 	exit
 fi
 
