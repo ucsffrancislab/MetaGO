@@ -1,59 +1,59 @@
 #!/usr/bin/env bash
 
-ARGS=`getopt -a -o I:F:N:M:K:m:P:C:A:X:L:W:O:USZh -l inputData:,fileList:,n1:,n2:,kMer:,min:,Piece:,K2test:,ASS:,WilcoxonTest:,LogicalRegress:,filterFuction:,outputPath:,Union,sparse,cleanUp,help -- "$@"`  
-[ $? -ne 0 ] && usage  
-#set -- "${ARGS}"  
-eval set -- "${ARGS}" 
- 
-while true ; do  
+ARGS=`getopt -a -o I:F:N:M:K:m:P:C:A:X:L:W:O:USZh -l inputData:,fileList:,n1:,n2:,kMer:,min:,Piece:,K2test:,ASS:,WilcoxonTest:,LogicalRegress:,filterFuction:,outputPath:,Union,sparse,cleanUp,help -- "$@"`
+[ $? -ne 0 ] && usage
+#set -- "${ARGS}"
+eval set -- "${ARGS}"
+
+while true ; do
 	case "$1" in
 		-I|--inputData)
 			inputData="$2" #input data,raw data or union matrix
 			shift
 			;;
 		-F|--fileList)   #inputFile List which includes all sampleFiles' absolute path name
-			fileList="$2" 
-			shift  
-			;;  
-		-N|--n1)  
+			fileList="$2"
+			shift
+			;;
+		-N|--n1)
 			n1="$2"  #The totall samples in group1
-			shift  
-			;;  
-		-M|--n2)  
+			shift
+			;;
+		-M|--n2)
 			n2="$2"  #The totall samples in group2
-			shift  
-			;;  
-		-K|--kMer)  
+			shift
+			;;
+		-K|--kMer)
 			kMer="$2"  #The length of tuple
-			shift  
-			;;  
-		-m|--min)  
+			shift
+			;;
+		-m|--min)
 			min="$2" #The minin frequency of tuple
-			shift  
+			shift
 			;;
 		-P|--Piece):
 			Piece="$2" #The totall pieces of every tupleFile splited into
 			shift
-			;;  
-		-C|--K2test)  
+			;;
+		-C|--K2test)
 			K2test="$2" #The chi2 test p value threshold
-			;;  
-		-A|--ASS)   
+			;;
+		-A|--ASS)
 			ASS="$2" #The AUC test AUC threshold
-			;;  
+			;;
 		-X|--WilcoxonTest)
 			WilcoxonTest="$2"
 			;;
 		-L|--LogicalRegress)
 			LogicalRegress="$2"
 			;;
-		-W|--filterFuction)   
+		-W|--filterFuction)
 			filterFuction="$2" #The filter function TK or AUC
-			;;  
-		-O|--outputPath)  
+			;;
+		-O|--outputPath)
 			outputPath="$2" #Output files' absolute path name
-			;;  
-		-U|--Union)  
+			;;
+		-U|--Union)
 			UNION="Y" #Whether save Unioned files
 			;;
 		-S|--sparse)
@@ -61,17 +61,17 @@ while true ; do
 			;;
 		-Z|--cleanUp)
 			CLEANUP="Y" #Whether clean up all intermediate documents
-			;;  
-		-h|--help)  
-			usage  
-			;;  
-		--)  
-			shift  
-			break 
-			;;  
-	esac  
-	shift  
-done 
+			;;
+		-h|--help)
+			usage
+			;;
+		--)
+			shift
+			break
+			;;
+	esac
+	shift
+done
 
 
 ####################################
@@ -110,7 +110,7 @@ if [ -n "$FileList" -a "$InputData" = 'MATRIX' ]||[ -n "$KMER" -a "$InputData" =
 fi
 
 if [ -n "$K2test" -a "$filterFuction" = 'ASS' ]||[ -n "$ASS" -a "$filterFuction" = 'chi2-test' ]; then
-	echo "ERRO! You should choose a right parameter! If you choose 'ASS' as the filterFuction, you can not choose K2test, and if you choose 'chi2-test' as the filterFuction, you can not choose ASS" 
+	echo "ERRO! You should choose a right parameter! If you choose 'ASS' as the filterFuction, you can not choose K2test, and if you choose 'chi2-test' as the filterFuction, you can not choose ASS"
 	exit
 fi
 
@@ -120,11 +120,11 @@ if [ "$InputData" = 'RAW' ]; then
 		exit
 	fi
 else
-	if [ -z $N1 ]||[ -z $N2 ]; then 
+	if [ -z $N1 ]||[ -z $N2 ]; then
 		echo "ERRO!!Lack of parameter!!"
 		exit
 	fi
-fi  
+fi
 
 if [ "$filterFuction" != 'ASS' -a  "$filterFuction" != 'chi2-test' ]; then
 	echo " ERRO!! Please choose a correct funtion for filtering, you can shoose 'chi2-test' or 'ASS' "
@@ -196,6 +196,26 @@ fi
 echo $PICECE $K2_theta $ASS_theta $saveUnion $saveFilter80 $Clean
 
 
+nb_cores=$( getconf _NPROCESSORS_ONLN )
+echo
+echo "Using ${nb_cores} for parallelization"
+echo
+
+#grep MemTotal /proc/meminfo
+#MemTotal:       125816292 kB
+#100G
+mem=$( awk '( $1 == "MemTotal:" ){split((0.8*($2))/1000000,a,".");print(a[1]"G")}' /proc/meminfo )
+echo
+echo "Using ${mem} memory"
+echo
+
+#Put
+#--driver-cores NUM
+#--driver-memory MEM
+#on the spark-submit command line and remove from conf file?
+
+
+
 
 
 if [ "$InputData" = 'RAW' ]; then
@@ -207,9 +227,6 @@ if [ "$InputData" = 'RAW' ]; then
 	tail -n $n2 $FileList > group2File.txt
 
 	mkdir G1_tupleFile G2_tupleFile
-
-	nb_cores=$( getconf _NPROCESSORS_ONLN )
-	echo "Using ${nb_cores} for dsk"
 
 	for g in 1 2 ; do
 
@@ -229,20 +246,20 @@ if [ "$InputData" = 'RAW' ]; then
 				dskbase=$sampleName.fasta.gz
 			else
 				dskbase=$iterm
-			fi    
+			fi
 			dsk -nb-cores ${nb_cores} -file ${dskbase} -kmer-size $KMER -abundance-min $MIN -out ${dskbase}.h5
 			dsk2ascii -nb-cores ${nb_cores} -file ${dskbase}.h5 -out G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
 			rm ${dskbase}.h5
 
 		done
-	done	#	for g in 1 2 ; do	
+	done	#	for g in 1 2 ; do
 
 	rm group1File.txt group2File.txt
 
 
 	if  [[ "$fileType" = 'sra' ]]; then
 		mkdir fastaFile
-		mv *.gz fastaFile/ 
+		mv *.gz fastaFile/
 		if [[ "$Clean" = "Y" ]]; then
 			rm -r fastaFile/
 		else
@@ -300,7 +317,7 @@ if [ "$InputData" = 'RAW' ]; then
 
 		for i in 1 2 ; do
 			cd G${i}_tupleFile/
-			bash ../split_tupleData.sh ../Group${i}FileList.txt $PICECE 
+			bash ../split_tupleData.sh ../Group${i}FileList.txt $PICECE
 			cd splited_file/
 			for k in $( seq 1 $PICECE); do
 				ls *_$k.txt > ../../Group${i}FileList_$k.txt
@@ -312,7 +329,7 @@ if [ "$InputData" = 'RAW' ]; then
 			cd ..
 		done
 
-		if [[ "$Clean" = "Y" ]]; then 
+		if [[ "$Clean" = "Y" ]]; then
 			rm -r G1_tupleFile/ G2_tupleFile/
 		else
 			mv G1_tupleFile/ $OUT
@@ -322,7 +339,7 @@ if [ "$InputData" = 'RAW' ]; then
 
 fi
 
-spark_submit="spark-submit --properties-file ./spark.conf"
+spark_submit="spark-submit --properties-file ./spark.conf --driver-cores ${nb_cores} --driver-memory ${mem}"
 spark_common="-m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY"
 sparkUnionFilter="${spark_submit} sparkUnionFilter.py -r TupleNumber.txt ${spark_common} -u $saveUnion -s $saveFilter80"
 
@@ -342,7 +359,7 @@ if [[ "$PICECE" -ne 1 ]]; then
 				mv tuple_union_$k $OUT
 			fi
 
-			if [[ "$saveFilter80" = "Y" ]]; then 
+			if [[ "$saveFilter80" = "Y" ]]; then
 				mv filter_sparse filter_sparse_$k
 				mv filter_sparse_$k $OUT
 			fi
@@ -380,7 +397,7 @@ else
 		if [[ "$saveUnion" = "Y" ]]; then
 			mv tuple_union/ $OUT
 		fi
-       
+
 		if [[ "$saveFilter80" = "Y" ]]; then
 			mv filter_sparse/ $OUT
 		fi
@@ -427,7 +444,7 @@ if [ "$InputData" = 'RAW' ]; then
 		mv Group2FileList.txt G2_tupleFile/
 	fi
 
-	if [[ "$PICECE" -ne 1 ]]; then 
+	if [[ "$PICECE" -ne 1 ]]; then
 		if [[ "$Clean" = "Y" ]]; then
 			rm -r Group1splitedFile/ Group2splitedFile/
 		else
@@ -435,7 +452,7 @@ if [ "$InputData" = 'RAW' ]; then
 			mv Group2splitedFile/ $OUT
 		fi
 	else
-		if [[ "$Clean" = "Y" ]]; then 
+		if [[ "$Clean" = "Y" ]]; then
 			rm -r G1_tupleFile/ G2_tupleFile/
 		else
 			mv G1_tupleFile/ $OUT

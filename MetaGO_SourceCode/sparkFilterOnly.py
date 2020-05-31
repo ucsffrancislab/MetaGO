@@ -78,9 +78,11 @@ print(tuple_number)
 f_number.close()
 
 
-cores=os.sysconf("SC_NPROCESSORS_ONLN")
-sc = SparkContext("local["+str(cores)+"]", "First Spark App")
+#cores=os.sysconf("SC_NPROCESSORS_ONLN")
+#sc = SparkContext("local["+str(cores)+"]", "First Spark App")
 #sc = SparkContext("local[10]", "First Spark App")
+#	local[*] Run Spark locally with as many worker threads as logical cores on your machine.
+sc = SparkContext("local[*]", "First Spark App")
 
 
 res_select_80=sc.textFile(file_in,use_unicode=False).persist(StorageLevel.MEMORY_AND_DISK_SER)
