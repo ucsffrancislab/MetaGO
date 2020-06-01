@@ -5,6 +5,10 @@ ARGS=`getopt -a -o I:F:N:M:K:m:P:C:A:X:L:W:O:USZh -l inputData:,fileList:,n1:,n2
 #set -- "${ARGS}"
 eval set -- "${ARGS}"
 
+echo "Filenames parsed on .'s SAMPLENAME.FILETYPE.FILETYPE2"
+echo "Where FILETYPE is fasta and FILETYPE2 would be gz, if present"
+echo "DO NOT USE ANY OTHER .'s"
+
 while true ; do
 	case "$1" in
 		-I|--inputData)
@@ -77,6 +81,8 @@ done
 ####################################
 # initialization prepare fileLists #
 ####################################
+
+#	What is the 'aaa' for?
 echo $fileList $n1 $n2 $kMer $min $Piece $Ttest $K2test $ASS $filterFuction $outputPath $UNION 'aaa' $SPARSE $CLEANUP
 InputData=$inputData
 FileList=$fileList
