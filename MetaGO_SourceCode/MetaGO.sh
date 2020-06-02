@@ -210,7 +210,8 @@ echo
 #grep MemTotal /proc/meminfo
 #MemTotal:       125816292 kB
 #100G
-mem=$( awk '( $1 == "MemTotal:" ){split((0.8*($2))/1000000,a,".");print(a[1]"G")}' /proc/meminfo )
+#mem=$( awk '( $1 == "MemTotal:" ){split((0.8*($2))/1000000,a,".");print(a[1]"G")}' /proc/meminfo )
+mem=$( awk '( $1 == "MemTotal:" ){split(($2/1000000)-15,a,".");print(a[1]"G")}' /proc/meminfo )
 echo
 echo "Using ${mem} memory"
 echo
@@ -280,34 +281,34 @@ if [ "$InputData" = 'RAW' ]; then
 
 	#	parallelize this with parallel
 	#	I think that the order of this file matters so don't muck it up.
-	#	for f in G?_tupleFile/*.txt ; do
-	#		echo "awk '{sum+=$2};END{print sum}' $f > ${f}.sum.txt"
-	#	done | parallel
-	#	for i in 1 2 ; do
-	#		cd G${i}_tupleFile/
-	#		ls *.txt > ../Group${i}FileList.txt
-	#		for iterm in $( cat ../Group${i}FileList.txt ); do
-	#			###awk '{sum+=$2};END{print sum}' $iterm >> ../group1TupleNumber.txt
-	#			cat ${iterm}.sum.txt >> ../group${i}TupleNumber.txt
-	#		done
-	#		cd ../
-	#	done
+	echo "Summing"
+	for f in G?_tupleFile/*.txt ; do
+		echo "awk '{sum+=$2};END{print sum}' $f > ${f}.sum"
+	done | parallel
+	for i in 1 2 ; do
+		cd G${i}_tupleFile/
+		ls *.txt > ../Group${i}FileList.txt
+		for iterm in $( cat ../Group${i}FileList.txt ); do
+			cat ${iterm}.sum >> ../group${i}TupleNumber.txt
+		done
+		cd ../
+	done
 
 	#	Not sure that's worth parallelizing
-
-	cd G1_tupleFile/
-	ls *.txt > ../Group1FileList.txt
-	for iterm in $( cat ../Group1FileList.txt ); do
-		awk '{sum+=$2};END{print sum}' $iterm >> ../group1TupleNumber.txt
-	done
-	cd ../
-
-	cd G2_tupleFile/
-	ls *.txt > ../Group2FileList.txt
-	for iterm in $( cat ../Group2FileList.txt ); do
-		awk '{sum+=$2};END{print sum}' $iterm >> ../group2TupleNumber.txt
-	done
-	cd ../
+	#
+	#	cd G1_tupleFile/
+	#	ls *.txt > ../Group1FileList.txt
+	#	for iterm in $( cat ../Group1FileList.txt ); do
+	#		awk '{sum+=$2};END{print sum}' $iterm >> ../group1TupleNumber.txt
+	#	done
+	#	cd ../
+	#
+	#	cd G2_tupleFile/
+	#	ls *.txt > ../Group2FileList.txt
+	#	for iterm in $( cat ../Group2FileList.txt ); do
+	#		awk '{sum+=$2};END{print sum}' $iterm >> ../group2TupleNumber.txt
+	#	done
+	#	cd ../
 
 	cat group1TupleNumber.txt group2TupleNumber.txt > TupleNumber.txt
 	rm group1TupleNumber.txt group2TupleNumber.txt
