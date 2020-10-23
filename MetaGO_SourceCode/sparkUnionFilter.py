@@ -124,6 +124,12 @@ if(i!=0):
 		c0=c0.union(para2[j])
 res=c0.map(lambda x :(x[0],[x[1]])).reduceByKey(lambda a,b:sorted(a+b))
 
+#res=c0.map(lambda x :(x[0],[x[1]])).reduceByKey(lambda a,b:sorted(a+b), numPartitions=32)
+
+#	I think that this defaults to the number of cores. Actually, its many more. Hundreds or even thousands
+#print( "Num Partitions" )
+#print( res.getNumPartitions )
+
 #######################################
 # Union samples into a feature matrix #
 #######################################
@@ -147,9 +153,12 @@ def Myfunc_Union(s):
 
 tuple_forward=res.map(Myfunc_Union).persist(StorageLevel.MEMORY_AND_DISK_SER)
 
+
+# Sometimes, this fails with Too Many Open Files. Investigating.
 if Union_save=="Y":
 	tuple_forward_out=tuple_forward.map(lambda s : s.replace('*','\t').replace(',','\t')).persist(StorageLevel.MEMORY_AND_DISK_SER)
 	tuple_forward_out.saveAsTextFile("tuple_union")
+
 
 #################################################################################
 # the function that filter the features that includes 80% 0 in frequency vectors#
