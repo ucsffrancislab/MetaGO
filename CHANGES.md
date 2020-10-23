@@ -19,9 +19,25 @@ Downgraded to python 2.7 for the moment. Still working.
 
 
 
+##	20201013
+
+Using more absolute paths so can run in data dir, not in software dir
+
+Stop deleting files and moving them around
+
+Note that upgrading pyspark above 3 will require changes in the python scripts.
+MEMORY_AND_DISK_SER = StorageLevel(True, True, False, False, 1)
+
+I'm working with pip install --upgrade --user pyspark==2.4.5
+
+Define spark.local.dir for large datasets. /tmp was too small. /scratch has 2TB.
 
 
 
+
+
+
+##	20200602
 
 Make number of cores used by Spark dynamic.
 In MetaGO.bash?

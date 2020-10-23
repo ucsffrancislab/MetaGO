@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+set -e  #       exit if any command fails
+#set -u  #       Error on usage of unset variables ( too many given the script style )
+set -o pipefail
+
+# I don't see the advantage of use PIECE
+
+SCRIPT=$( readlink -f $0 )
+#SCRIPTDIR=$( dirname $SCRIPT )
+#	when submitting a script to the queue IT IS COPIED
+#	this dir will not include other things that were in the same dir
+SCRIPTDIR=$HOME/github/ucsffrancislab/MetaGO/MetaGO_SourceCode
+
+
 ARGS=`getopt -a -o I:F:N:M:K:m:P:C:A:X:L:W:O:USZh -l inputData:,fileList:,n1:,n2:,kMer:,min:,Piece:,K2test:,ASS:,WilcoxonTest:,LogicalRegress:,filterFuction:,outputPath:,Union,sparse,cleanUp,help -- "$@"`
 [ $? -ne 0 ] && usage
 #set -- "${ARGS}"
@@ -83,6 +96,7 @@ done
 ####################################
 
 #	What is the 'aaa' for?
+#	Ttest is never used. Can I remove?
 echo $fileList $n1 $n2 $kMer $min $Piece $Ttest $K2test $ASS $filterFuction $outputPath $UNION 'aaa' $SPARSE $CLEANUP
 InputData=$inputData
 FileList=$fileList
@@ -100,8 +114,6 @@ LR_theta=$LogicalRegress
 saveUnion=$UNION
 saveFilter80=$SPARSE
 Clean=$CLEANUP
-
-
 
 echo $InputData
 
@@ -211,7 +223,14 @@ echo
 #MemTotal:       125816292 kB
 #100G
 #mem=$( awk '( $1 == "MemTotal:" ){split((0.8*($2))/1000000,a,".");print(a[1]"G")}' /proc/meminfo )
-mem=$( awk '( $1 == "MemTotal:" ){split(($2/1000000)-15,a,".");print(a[1]"G")}' /proc/meminfo )
+#mem=$( awk '( $1 == "MemTotal:" ){split(($2/1000000)-15,a,".");print(a[1]"G")}' /proc/meminfo )
+# for full n38 server using 504GB, need less than this
+#mem=$( awk '( $1 == "MemTotal:" ){split(($2/1024000)-15,a,".");print(a[1]"G")}' /proc/meminfo )
+mem=$( awk '( $1 == "MemTotal:" ){split(0.9*($2/1024000)-15,a,".");print(a[1]"G")}' /proc/meminfo )
+
+# this should be converted into a command line option
+#	something is still crossing the line on a cluster node even when this is set very low
+
 echo
 echo "Using ${mem} memory"
 echo
@@ -221,56 +240,73 @@ echo
 #--driver-memory MEM
 #on the spark-submit command line and remove from conf file?
 
-
-
-
-
 if [ "$InputData" = 'RAW' ]; then
 	#################
 	# get tupleFile #
 	#################
 
-	head -n $n1 $FileList > group1File.txt
-	tail -n $n2 $FileList > group2File.txt
+	if [ ! -f ${OUT}/group1File.txt ] ; then
+		head -n $n1 $FileList > ${OUT}/group1File.txt
+	fi
 
-	mkdir G1_tupleFile G2_tupleFile
+	if [ ! -f ${OUT}/group2File.txt ] ; then
+		tail -n $n2 $FileList > ${OUT}/group2File.txt
+	fi
+
+	mkdir -p ${OUT}/G1_tupleFile ${OUT}/G2_tupleFile
 
 	for g in 1 2 ; do
 
-		for iterm in $( cat group${g}File.txt ); do
+		for iterm in $( cat ${OUT}/group${g}File.txt ); do
+			echo "iterm :${iterm}:"
 
 			#	example
 			#	iterm=/mnt/ssd0/MetaGO_S3_20200407_Schizophrenia/Control-SD14-unmapped.fasta.gz
 
-			sampleName=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $1}'`
-			fileType=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $2}'`
-			fileType2=`echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $3}'`
+			sampleName=$( echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $1}' )
+			fileType=$( echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $2}' )
+			fileType2=$( echo $iterm|awk -F "/" '{print $NF}'|awk -F"." '{print $3}' )
 			echo $sampleName
 			echo $fileType
+			echo $fileType2
 
 			if [[ "$fileType" = 'sra' ]]; then
 				fastq-dump --split-spot $iterm --fasta --gzip
 				dskbase=$sampleName.fasta.gz
+				#	sampleName does not include the path ( I don't use sra so can't test at the moment )
 			else
+				#	iterm does (or can include the full path)
 				dskbase=$iterm
 			fi
-			dsk -nb-cores ${nb_cores} -file ${dskbase} -kmer-size $KMER -abundance-min $MIN -out ${dskbase}.h5
-			dsk2ascii -nb-cores ${nb_cores} -file ${dskbase}.h5 -out G${g}_tupleFile/$sampleName"_k_"$KMER".txt"
-			rm ${dskbase}.h5
+			echo "dskbase :${dskbase}:"
+
+			h5=${OUT}/$( basename ${dskbase} ).h5
+			dskascii=${OUT}/G${g}_tupleFile/${sampleName}_k_${KMER}.txt
+			if [ ! -f ${dskascii} ] ; then
+				if [ ! -f ${h5} ] ; then
+					echo "Writing h5:${h5}:"
+					echo "dsk -nb-cores ${nb_cores} -file ${dskbase} -kmer-size $KMER -abundance-min $MIN -out ${h5}"
+					dsk -nb-cores ${nb_cores} -file ${dskbase} -kmer-size $KMER -abundance-min $MIN -out ${h5}
+				fi
+				echo "Writing out:${dskascii}:"
+				echo "dsk2ascii -nb-cores ${nb_cores} -file ${h5} -out ${dskascii}"
+				dsk2ascii -nb-cores ${nb_cores} -file ${h5} -out ${dskascii}
+				rm ${h5}
+			fi
 
 		done
 	done	#	for g in 1 2 ; do
 
-	rm group1File.txt group2File.txt
-
+	#	keep for now
+	#rm ${OUT}/group1File.txt ${OUT}/group2File.txt
 
 	if  [[ "$fileType" = 'sra' ]]; then
-		mkdir fastaFile
-		mv *.gz fastaFile/
+		mkdir ${OUT}/fastaFile
+		mv ${OUT}/*.fasta.gz ${OUT}/fastaFile/
 		if [[ "$Clean" = "Y" ]]; then
-			rm -r fastaFile/
-		else
-			mv fastaFile/ $OUT
+			rm -r ${OUT}/fastaFile/
+		#else
+		#	mv fastaFile/ $OUT
 		fi
 	fi
 
@@ -282,40 +318,36 @@ if [ "$InputData" = 'RAW' ]; then
 	#	parallelize this with parallel
 	#	I think that the order of this file matters so don't muck it up.
 	echo "Summing"
-	for f in G?_tupleFile/*.txt ; do
-		echo "awk '{sum+=$2};END{print sum}' $f > ${f}.sum"
+	echo "${OUT}/G?_tupleFile/*.txt"
+	for f in ${OUT}/G?_tupleFile/*.txt ; do
+		#	MUST ESCAPE THE DOLLAR SIGN!!!
+		if [ ! -f ${f}.sum ] ; then
+			echo "awk '{sum+=\$2};END{print sum}' $f > ${f}.sum"
+		fi
 	done | parallel
+	echo "Summed"
+
+	echo "Concatenating sums"
 	for i in 1 2 ; do
-		cd G${i}_tupleFile/
-		ls *.txt > ../Group${i}FileList.txt
-		for iterm in $( cat ../Group${i}FileList.txt ); do
-			cat ${iterm}.sum >> ../group${i}TupleNumber.txt
-		done
-		cd ../
+		cd ${OUT}/G${i}_tupleFile/
+		echo -n > ${OUT}/group${i}TupleNumber.txt
+		# will be in different order than initial file list ?? Does this matter?
+		if [ -n "$( ls ${OUT}/G${i}_tupleFile/*.txt )" ] ; then
+			ls ${OUT}/G${i}_tupleFile/*.txt > ${OUT}/Group${i}FileList.txt
+			for iterm in $( cat ${OUT}/Group${i}FileList.txt ); do
+				cat ${iterm}.sum >> ${OUT}/group${i}TupleNumber.txt
+			done
+		else
+			touch ${OUT}/Group${i}FileList.txt
+		fi
+		cd ${OUT}
 	done
+	echo "Concatenated"
 
-	#	Not sure that's worth parallelizing
-	#
-	#	cd G1_tupleFile/
-	#	ls *.txt > ../Group1FileList.txt
-	#	for iterm in $( cat ../Group1FileList.txt ); do
-	#		awk '{sum+=$2};END{print sum}' $iterm >> ../group1TupleNumber.txt
-	#	done
-	#	cd ../
-	#
-	#	cd G2_tupleFile/
-	#	ls *.txt > ../Group2FileList.txt
-	#	for iterm in $( cat ../Group2FileList.txt ); do
-	#		awk '{sum+=$2};END{print sum}' $iterm >> ../group2TupleNumber.txt
-	#	done
-	#	cd ../
+	cat ${OUT}/group1TupleNumber.txt ${OUT}/group2TupleNumber.txt > ${OUT}/TupleNumber.txt
+	#	keep for now
+	#rm ${OUT}/group1TupleNumber.txt ${OUT}/group2TupleNumber.txt
 
-	cat group1TupleNumber.txt group2TupleNumber.txt > TupleNumber.txt
-	rm group1TupleNumber.txt group2TupleNumber.txt
-
-
-#	Stop moving the commands around
-#	may need to add path to cat to python script from bash script
 
 	###################
 	# split tupleFile #
@@ -323,147 +355,162 @@ if [ "$InputData" = 'RAW' ]; then
 	if [[ "$PICECE" -ne 1 ]]; then
 
 		for i in 1 2 ; do
-			cd G${i}_tupleFile/
-			bash ../split_tupleData.sh ../Group${i}FileList.txt $PICECE
+			cd ${OUT}/G${i}_tupleFile/
+			bash ${SCRIPTDIR}/split_tupleData.sh ${OUT}/Group${i}FileList.txt $PICECE
 			cd splited_file/
 			for k in $( seq 1 $PICECE); do
 				ls *_$k.txt > ../../Group${i}FileList_$k.txt
 			done
 			mv * ../../
 			cd ../
-			rm -r splited_file/
-			rm -r temporary_files/
+			#	remove empty dirs
+			#rm -r splited_file/
+			#rm -r temporary_files/
+			rmdir splited_file/
+			rmdir temporary_files/
 			cd ..
 		done
 
-		if [[ "$Clean" = "Y" ]]; then
-			rm -r G1_tupleFile/ G2_tupleFile/
-		else
-			mv G1_tupleFile/ $OUT
-			mv G2_tupleFile/ $OUT
-		fi
+		#	keep for now
+#		if [[ "$Clean" = "Y" ]]; then
+#			rm -r ${OUT}/G1_tupleFile/ ${OUT}/G2_tupleFile/
+#		else
+#	Should be there
+#			mv G1_tupleFile/ $OUT
+#			mv G2_tupleFile/ $OUT
+#		fi
 	fi
 
 fi
 
-spark_submit="spark-submit --properties-file ./spark.conf --driver-cores ${nb_cores} --driver-memory ${mem}"
+spark_submit="spark-submit --properties-file ${SCRIPTDIR}/spark.conf --driver-cores ${nb_cores} --driver-memory ${mem}"
 spark_common="-m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY"
-sparkUnionFilter="${spark_submit} sparkUnionFilter.py -r TupleNumber.txt ${spark_common} -u $saveUnion -s $saveFilter80"
+sparkUnionFilter="${spark_submit} ${SCRIPTDIR}/sparkUnionFilter.py -r ${OUT}/TupleNumber.txt ${spark_common} -u $saveUnion -s $saveFilter80"
 
-sparkFilterOnly="${spark_submit} sparkFilterOnly.py -r $OUT/TupleNumber.txt ${spark_common}"
-#spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse_$k/ -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
-#spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse/    -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
+sparkFilterOnly="${spark_submit} ${SCRIPTDIR}/sparkFilterOnly.py -r $OUT/TupleNumber.txt ${spark_common}"
 
 if [[ "$PICECE" -ne 1 ]]; then
+	echo "Merging in multple pieces"
 	for k in $( seq 1 $PICECE); do
 		if [ "$InputData" = 'RAW' ]; then
-			cat Group1FileList_$k.txt Group2FileList_$k.txt > TupleFileList_$k.txt
-#			spark-submit --properties-file ./spark.conf sparkUnionFilter.py -f TupleFileList_$k.txt -r TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY -u $saveUnion -s $saveFilter80
-			${sparkUnionFilter} -f TupleFileList_$k.txt
+			cat ${OUT}/Group1FileList_$k.txt ${OUT}/Group2FileList_$k.txt > ${OUT}/TupleFileList_$k.txt
+			${sparkUnionFilter} -f ${OUT}/TupleFileList_$k.txt
 
 			if [[ "$saveUnion" = "Y" ]]; then
 				mv tuple_union tuple_union_$k
-				mv tuple_union_$k $OUT
+				#mv tuple_union_$k $OUT
 			fi
 
 			if [[ "$saveFilter80" = "Y" ]]; then
 				mv filter_sparse filter_sparse_$k
-				mv filter_sparse_$k $OUT
+				#mv filter_sparse_$k $OUT
 			fi
 
 		else
-			#spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse_$k/ -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
 			${sparkFilterOnly} -f $OUT/filter_sparse_$k/
 		fi
 
 		if [[ "$WAY" = "ASS" ]]; then
 			mv ASS_filtered_down ASS_filtered_down_$k
-			mv ASS_filtered_down_$k $OUT
+			#mv ASS_filtered_down_$k $OUT
 			mv WR_filtered_down WR_filtered_down_$k
-			mv WR_filtered_down_$k $OUT
+			#mv WR_filtered_down_$k $OUT
 		else
 			mv Chi2_filtered_down Chi2_filtered_down_$k
-			mv Chi2_filtered_down_$k $OUT
+			#mv Chi2_filtered_down_$k $OUT
 			mv WR_filtered_down WR_filtered_down_$k
-			mv WR_filtered_down_$k $OUT
+			#mv WR_filtered_down_$k $OUT
 		fi
 	done
 
 else
 	if [ "$InputData" = 'RAW' ]; then
-		cat Group1FileList.txt Group2FileList.txt > TupleFileList.txt
-		cd G1_tupleFile
-		mv * ../
-		cd ../G2_tupleFile
-		mv * ../
-		cd ../
-		#spark-submit --properties-file ./spark.conf sparkUnionFilter.py -f TupleFileList.txt -r TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY -u $saveUnion -s $saveFilter80
-		${sparkUnionFilter} -f TupleFileList.txt
-		rm TupleFileList.txt
-
-		if [[ "$saveUnion" = "Y" ]]; then
-			mv tuple_union/ $OUT
+		echo "Merging in one piece"
+		cat ${OUT}/Group1FileList.txt ${OUT}/Group2FileList.txt > ${OUT}/TupleFileList.txt
+# WHY KEEP MOVING FILES AROUND. Keep files in the G?_tupleFile
+#		cd G1_tupleFile
+#		mv * ../
+#		cd ../G2_tupleFile
+#		mv * ../
+#		cd ../
+		if [ ! -d ${OUT}/tuple_union ] ; then
+			echo "Running union filter"
+			echo ${sparkUnionFilter} -f ${OUT}/TupleFileList.txt
+			${sparkUnionFilter} -f ${OUT}/TupleFileList.txt
+			echo "Done running union filter"
 		fi
+		#	keep for now
+#		rm TupleFileList.txt
 
-		if [[ "$saveFilter80" = "Y" ]]; then
-			mv filter_sparse/ $OUT
-		fi
+		#	both should be in $OUT already
+		#if [[ "$saveUnion" = "Y" ]]; then
+		#	mv tuple_union/ $OUT
+		#fi
+		#if [[ "$saveFilter80" = "Y" ]]; then
+		#	mv filter_sparse/ $OUT
+		#fi
 	else
-		#spark-submit --properties-file ./spark.conf sparkFilterOnly.py -f $OUT/filter_sparse/ -r $OUT/TupleNumber.txt -m $N1 -n $N2 -c $K2_theta -t $ASS_theta -x $Wilcoxon_theta -l $LR_theta -w $WAY
 		${sparkFilterOnly} -f $OUT/filter_sparse/
 	fi
 
-	if [[ "$WAY" = "ASS" ]]; then
-		mv ASS_filtered_down/ $OUT
-		mv WR_filtered_down/ $OUT
-	else
-		mv Chi2_filtered_down/ $OUT
-		mv WR_filtered_down/ $OUT
-	fi
+	#	Hopefully in $OUT already
+	#if [[ "$WAY" = "ASS" ]]; then
+	#	mv ASS_filtered_down/ $OUT
+	#	mv WR_filtered_down/ $OUT
+	#else
+	#	mv Chi2_filtered_down/ $OUT
+	#	mv WR_filtered_down/ $OUT
+	#fi
 
 fi
-if [ "$InputData" = 'RAW' ]; then
-	mv TupleNumber.txt $OUT
-fi
+
+
+# already in OUT/
+#if [ "$InputData" = 'RAW' ]; then
+#	mv TupleNumber.txt $OUT
+#fi
 
 ############################################
 # move all intermediate files in documents #
 ############################################
 
-if [ "$InputData" = 'RAW' ]; then
-	if [[ "$PICECE" -ne 1 ]]; then
-		mkdir Group1splitedFile/ Group2splitedFile/
-		for k in $( seq 1 $PICECE); do
-			mv `cat Group1FileList_$k.txt` Group1splitedFile/
-			mv `cat Group2FileList_$k.txt` Group2splitedFile/
-			mv Group1FileList_$k.txt Group1splitedFile/
-			mv Group2FileList_$k.txt Group2splitedFile/
-			#mv Group1FileList.txt Group1splitedFile/
-			#mv Group2FileList.txt Group2splitedFile/
-			rm TupleFileList_$k.txt
-		done
-		mv Group1FileList.txt Group1splitedFile/
-		mv Group2FileList.txt Group2splitedFile/
-	else
-		mv `cat Group1FileList.txt` G1_tupleFile/
-		mv `cat Group2FileList.txt` G2_tupleFile/
-		mv Group1FileList.txt G1_tupleFile/
-		mv Group2FileList.txt G2_tupleFile/
-	fi
-
-	if [[ "$PICECE" -ne 1 ]]; then
-		if [[ "$Clean" = "Y" ]]; then
-			rm -r Group1splitedFile/ Group2splitedFile/
-		else
-			mv Group1splitedFile/ $OUT
-			mv Group2splitedFile/ $OUT
-		fi
-	else
-		if [[ "$Clean" = "Y" ]]; then
-			rm -r G1_tupleFile/ G2_tupleFile/
-		else
-			mv G1_tupleFile/ $OUT
-			mv G2_tupleFile/ $OUT
-		fi
-	fi
-fi
+#	Why? They should be created and kept in the appropriate spot
+#
+#	if [ "$InputData" = 'RAW' ]; then
+#		if [[ "$PICECE" -ne 1 ]]; then
+#			mkdir Group1splitedFile/ Group2splitedFile/
+#			for k in $( seq 1 $PICECE); do
+#				mv `cat Group1FileList_$k.txt` Group1splitedFile/
+#				mv `cat Group2FileList_$k.txt` Group2splitedFile/
+#				mv Group1FileList_$k.txt Group1splitedFile/
+#				mv Group2FileList_$k.txt Group2splitedFile/
+#				#mv Group1FileList.txt Group1splitedFile/
+#				#mv Group2FileList.txt Group2splitedFile/
+#				rm TupleFileList_$k.txt
+#			done
+#			mv Group1FileList.txt Group1splitedFile/
+#			mv Group2FileList.txt Group2splitedFile/
+#		else
+#			mv `cat Group1FileList.txt` G1_tupleFile/
+#			mv `cat Group2FileList.txt` G2_tupleFile/
+#			mv Group1FileList.txt G1_tupleFile/
+#			mv Group2FileList.txt G2_tupleFile/
+#		fi
+#
+#		if [[ "$PICECE" -ne 1 ]]; then
+#			if [[ "$Clean" = "Y" ]]; then
+#				rm -r Group1splitedFile/ Group2splitedFile/
+#			else
+#				mv Group1splitedFile/ $OUT
+#				mv Group2splitedFile/ $OUT
+#			fi
+#		else
+#			if [[ "$Clean" = "Y" ]]; then
+#				rm -r G1_tupleFile/ G2_tupleFile/
+#			#	already there
+#			#else
+#			#	mv G1_tupleFile/ $OUT
+#			#	mv G2_tupleFile/ $OUT
+#			fi
+#		fi
+#	fi
