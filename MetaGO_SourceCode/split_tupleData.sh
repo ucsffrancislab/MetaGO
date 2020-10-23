@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
-fileList=`cat $1`
+SCRIPT=$( readlink -f $0 )
+SCRIPTDIR=$( dirname $SCRIPT )
+
+
+fileList=$( cat $1 )
 #for item in $fileList
 #do
 #echo $item
@@ -24,7 +28,8 @@ for item2 in *.txt ; do
 	#echo $item2
 	#fileSize=`du -s $item2`
 	#echo $fileSize
-	echo "python ../../split_tupleData.py -s $pieces -f $item2 -p ../splited_file/"
+	#echo "python ../../split_tupleData.py -s $pieces -f $item2 -p ../splited_file/"
+	echo "python ${SCRIPTDIR}/split_tupleData.py -s $pieces -f $item2 -p ../splited_file/"
 	#python split_tupleData.py -s $pieces -f $item2 -p ../splited_file/
 	#rm $item2 -rf
 done | parallel
